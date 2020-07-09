@@ -1,0 +1,170 @@
+---
+title: "Exp4b LDT-LDT"
+author: "Yingcan Carol Wang"
+output:
+  html_notebook: default
+---
+## Introduction
+<font size = "4">
+This experiment is part of a series experiments we conducted to investigate how different experimental tasks influence speech perception. Previously, we conducted three online behavioural experiments (Exp1, 3 & 4a) and one MEG experiment (Exp2) manipulating the process of spoken word recognition and learning through the competitor priming effect (Monsell & Hirsh, 1998). The competitor priming effect shows that a spoken word prime (e.g. *captain*) delays subsequent recognition of a neighbouring target spoken word sharing the same initial segments (e.g. *captive*). We replicated this effect in Exp1&2 by presenting interleaved prime and target items in a lexical decision task (LDT). In Exp3, we replaced the LDT with the pause detection task (PDT; Mattys & Clark, 2002; Gaskell & Dumay, 2003) and found surprising results that a pseudoword prime, but not a word prime, delayed word recognition. 
+
+In order to examine why these two tasks resulted in different response patterns and tease apart their effects during competitor priming, we then pre-registered and conducted Exp4a (osf.io/9453v), which used PDT in the training phase (when the prime is presented) and LDT in the test phase (when the target is presented) separately. However, we only found a marginal trend similar to the results in Exp1-2. Here, in Exp4b, we will again use the LDT in both the training and test phases to determine whether the results from Exp4a were due to the change of tasks or the separate training/test phase design which lengthened the prime-target lag. 
+</font>
+```{r setup, include=FALSE}
+library(knitr)
+## Setup
+opts_chunk$set(echo = TRUE, fig.align='center', warning = FALSE, message = FALSE)
+opts_knit$set(root.dir = "/Users/wycarol/business onedrive/OneDrive - UIS/behavioural results/Exp4b_LDT_LDT/results/")
+
+filePathOut <- "/Users/wycarol/business onedrive/OneDrive - UIS/behavioural results/Exp4b_LDT_LDT/results/figures"
+```
+
+```{r eval = FALSE}
+##Load packages
+library(plyr)
+library(dplyr)
+
+library(ggplot2)
+library(ggsignif)
+library(lattice)
+library(labeling)
+library(RColorBrewer)
+
+library(lme4)
+#library(rlang)
+library(lmerTest)
+library(emmeans)
+#library(scales) # for oob=rescale_none
+#library(Rmisc)
+library(ordinal) 
+library(effects)
+#library(afex) #remove correlation in lmer
+
+library(brms) # bayesian
+library(ggmcmc)
+library(ggthemes)
+library(ggridges)
+library(bayestestR)
+
+library(simr) 
+```
+
+```{r, results = 'asis'}
+# load data
+df <- read.csv("Exp4b_data.csv", head = TRUE, stringsAsFactors = FALSE) 
+```
+
+<font size = "4">
+
+The variables of interest are: 
+
+1. **rt**: response time (ms) to the audio stimuli
+2. **key_press**: the keys participants pressed to make the response, i.e. P (represented by integer 80), Q (81)
+3. **subject**: integer numbers representing each participant
+4. **correct**: participants' accuracy, 1 is correct, 0 is incorrect, this will be calculated below 
+5. **item**: the item heard by participants in each trial  
+6. **condition**: experimental conditions including: 
+    + a word prime a word (WW)  
+    + a pseudoword prime a word (PW)
+    + a pseudoword prime a pseudoword (PP)
+    + a word prime a pseudoword (WP)
+    + unprimed word (W)
+    + unprimed pseudoword (P)
+    + filler (f) 
+7. **lexicality**: whether an item is a word or a pseudoword
+
+</font>
+```{r, include=FALSE}
+head(df, 3)
+# check data dimention and type
+str(df)
+# number of participants
+n_distinct(df$subject) 
+```
+
+## Part 1. Training phase 
+<font size = "4">
+First, I filtered data for the training phase only and cleaned the data. I removed participants with too many missing responses or wrong answers. Responses that were too fast (rt < 450ms) were also removed, since it is practically impossible to reach a lexical decision within this range of time (Marslen-Wilson, 1984).  
+</font>
+```{r}
+### Part 1
+# subset training data
+trainingData <- df %>% filter(pause == "present" | pause == "absent")
+
+# get number of non-responses
+trainingData <- trainingData %>% mutate(missing = case_when(
+  key_press == -1 ~ 1,
+  TRUE            ~ 0
+))
+  table(trainingData$missing)
+
+# add accuracy value to the column "correct"
+trainingData <- trainingData %>%
+  mutate(correct = case_when(
+    lexicality == "word" & key_press == 80 ~ 1,
+    lexicality == "pseudo" & key_press == 81 ~ 1,
+    TRUE ~ 0
+    )
+  )
+  
+# summarise missing/invalid/incorrect responses by participant (trials with rt<450ms are possibly late responses for previous missing trials)
+bySub0 <- trainingData %>% 
+  group_by(subject) %>%
+  summarise(missingAnswer = sum(missing),
+            invalidResponse = sum(rt<450),
+            total = length(correct),
+            numCorrect = sum(correct),
+            numIncorrect = total - numCorrect,
+            errorRate = numIncorrect/total)
+View(bySub0)
+
+#remove subjects with too many missing answers and incorrect answers in either training and test phase
+trainingData <- trainingData %>%
+  filter(!subject %in% c(233, 217, 331, 98, 703, 970, 329, 501))
+
+# remove invalid response 
+trainingValid <- trainingData %>% filter(rt >= 450)
+
+# put invalid values into one data frame
+trainingInvalid <- trainingData %>% filter(rt < 450)
+
+# remove fillers
+trainingValidNoFillers <- trainingValid %>% filter(condition != "")
+```
+
+<font size = "4">
+Next, I checked the raw rt data and, as expected, it is 
+</font>
+```{r}
+#check rt
+summary(trainingValidNoFillers$rt)
+boxplot(trainingValidNoFillers$rt ~ trainingValidNoFillers$subject)
+hist(trainingValidNoFillers$rt, breaks = 100)
+```
+
+
+```{r}
+# transform rt
+trainingValidNoFillers$logRT <- log(trainingValidNoFillers$rt)
+trainingValidNoFillers$invRT <- -1000/trainingValidNoFillers$rt
+
+#logRT after pause
+png(paste(filePathOut, "QQplot_trainingLogRTs.png", sep = ""), width = 1000, height = 1000)
+qqmath(~logRT | subject, data = trainingValidNoFillers)
+dev.off()
+summary(trainingValidNoFillers$logRT)
+boxplot(trainingValidNoFillers$logRT ~ trainingValidNoFillers$subject)
+hist(trainingValidNoFillers$logRT, breaks = 100)
+```
+```{r}
+#invRT
+png(paste(filePathOut, "QQplot_trainingInvRTs.png", sep = ""), width = 1000, height = 1000)
+qqmath(~invRT | subject, data = trainingValidNoFillers)
+dev.off()
+summary(trainingValidNoFillers$invRT)
+boxplot(trainingValidNoFillers$invRT ~ trainingValidNoFillers$subject)
+hist(trainingValidNoFillers$invRT, breaks = 100)
+```
+
+
+
