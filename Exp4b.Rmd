@@ -4,22 +4,35 @@ author: "Yingcan Carol Wang"
 output:
   html_notebook: default
 ---
+
+<style type="text/css">
+
+body, td {
+   font-size: 18px;
+}
+code.r{
+  font-size: 12px;
+}
+pre {
+  font-size: 16px
+}
+</style>
+
 ## Introduction
-<font size = "4">
 This experiment is part of a series experiments we conducted to investigate how different experimental tasks influence speech perception. Previously, we conducted three online behavioural experiments (Exp1, 3 & 4a) and one MEG experiment (Exp2) manipulating the process of spoken word recognition and learning through the competitor priming effect (Monsell & Hirsh, 1998). The competitor priming effect shows that a spoken word prime (e.g. *captain*) delays subsequent recognition of a neighbouring target spoken word sharing the same initial segments (e.g. *captive*). We replicated this effect in Exp1&2 by presenting interleaved prime and target items in a lexical decision task (LDT). In Exp3, we replaced the LDT with the pause detection task (PDT; Mattys & Clark, 2002; Gaskell & Dumay, 2003) and found surprising results that a pseudoword prime, but not a word prime, delayed word recognition. 
 
-In order to examine why these two tasks resulted in different response patterns and tease apart their effects during competitor priming, we then pre-registered and conducted Exp4a (osf.io/9453v), which used PDT in the training phase (when the prime is presented) and LDT in the test phase (when the target is presented) separately. However, we only found a marginal trend similar to the results in Exp1-2. Here, in Exp4b, we will again use the LDT in both the training and test phases to determine whether the results from Exp4a were due to the change of tasks or the separate training/test phase design which lengthened the prime-target lag. 
-</font>
+In order to examine why these two tasks resulted in different response patterns and tease apart their effects during competitor priming, we then pre-registered and conducted Exp4a (osf.io/9453v), which used PDT in the training phase (when the prime is presented) and LDT in the test phase (when the target is presented) separately, and each prime was repeatedly presented for 4 times. However, we only found a marginal trend similar to the results in Exp1-2. Here, in Exp4b, we will again use the LDT in both the training and test phases to determine whether the results from Exp4a were due to the change of tasks or the separate training/test phase design which lengthened the prime-target lag. 
+
 ```{r setup, include=FALSE}
 library(knitr)
 ## Setup
-opts_chunk$set(echo = TRUE, fig.align='center', warning = FALSE, message = FALSE)
+opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align='center', fig.width=12, fig.height=6)
 opts_knit$set(root.dir = "/Users/wycarol/business onedrive/OneDrive - UIS/behavioural results/Exp4b_LDT_LDT/results/")
 
 filePathOut <- "/Users/wycarol/business onedrive/OneDrive - UIS/behavioural results/Exp4b_LDT_LDT/results/figures"
 ```
 
-```{r eval = FALSE}
+```{r results="hide"}
 ##Load packages
 library(plyr)
 library(dplyr)
@@ -53,12 +66,11 @@ library(simr)
 # load data
 df <- read.csv("Exp4b_data.csv", head = TRUE, stringsAsFactors = FALSE) 
 ```
-
-<font size = "4">
+The data were collected using the Prolific Academic online platform (https://www.prolific.co/), where `r n_distinct(df$subject)` native British English speakers participated in the experiment. 
 
 The variables of interest are: 
 
-1. **rt**: response time (ms) to the audio stimuli
+1. **rt**: response times (ms) to the audio stimuli
 2. **key_press**: the keys participants pressed to make the response, i.e. P (represented by integer 80), Q (81)
 3. **subject**: integer numbers representing each participant
 4. **correct**: participants' accuracy, 1 is correct, 0 is incorrect, this will be calculated below 
@@ -73,7 +85,7 @@ The variables of interest are:
     + filler (f) 
 7. **lexicality**: whether an item is a word or a pseudoword
 
-</font>
+
 ```{r, include=FALSE}
 head(df, 3)
 # check data dimention and type
@@ -83,9 +95,11 @@ n_distinct(df$subject)
 ```
 
 ## Part 1. Training phase 
-<font size = "4">
-First, I filtered data for the training phase only and cleaned the data. I removed participants with too many missing responses or wrong answers. Responses that were too fast (rt < 450ms) were also removed, since it is practically impossible to reach a lexical decision within this range of time (Marslen-Wilson, 1984).  
-</font>
+
+In the training phase, participants heard 108 different words (e.g. *hygeiene*) and pseudowords (e.g. *letto*) being repeated 4 times across 4 blocks.These items in training phase serve as primes that will perturb items to be presented in the test phase. We are only interested in general results patterns in the training phase.   
+
+The first thing I did was to filter all the data for the training phase and cleaned the data by removing participants with too many missing responses or wrong answers (thresholded at 2 standard deviations above the mean). Responses that were too fast (rt < 450ms) were also removed, since it is practically impossible to reach a lexical decision within this range of time (Marslen-Wilson, 1984).  
+
 ```{r}
 ### Part 1
 # subset training data
@@ -118,37 +132,31 @@ bySub0 <- trainingData %>%
             errorRate = numIncorrect/total)
 View(bySub0)
 
-#remove subjects with too many missing answers and incorrect answers in either training and test phase
+#remove subjects with too many missing answers and incorrect answers in either training or test phase
 trainingData <- trainingData %>%
   filter(!subject %in% c(233, 217, 331, 98, 703, 970, 329, 501))
 
 # remove invalid response 
 trainingValid <- trainingData %>% filter(rt >= 450)
 
-# put invalid values into one data frame
-trainingInvalid <- trainingData %>% filter(rt < 450)
-
 # remove fillers
 trainingValidNoFillers <- trainingValid %>% filter(condition != "")
 ```
 
-<font size = "4">
-Next, I checked the raw rt data and, as expected, it is 
-</font>
-```{r}
+
+```{r include=FALSE}
 #check rt
 summary(trainingValidNoFillers$rt)
 boxplot(trainingValidNoFillers$rt ~ trainingValidNoFillers$subject)
 hist(trainingValidNoFillers$rt, breaks = 100)
 ```
 
-
-```{r}
+```{r include=FALSE}
 # transform rt
 trainingValidNoFillers$logRT <- log(trainingValidNoFillers$rt)
 trainingValidNoFillers$invRT <- -1000/trainingValidNoFillers$rt
 
-#logRT after pause
+#logRT
 png(paste(filePathOut, "QQplot_trainingLogRTs.png", sep = ""), width = 1000, height = 1000)
 qqmath(~logRT | subject, data = trainingValidNoFillers)
 dev.off()
@@ -156,7 +164,8 @@ summary(trainingValidNoFillers$logRT)
 boxplot(trainingValidNoFillers$logRT ~ trainingValidNoFillers$subject)
 hist(trainingValidNoFillers$logRT, breaks = 100)
 ```
-```{r}
+
+```{r include=FALSE}
 #invRT
 png(paste(filePathOut, "QQplot_trainingInvRTs.png", sep = ""), width = 1000, height = 1000)
 qqmath(~invRT | subject, data = trainingValidNoFillers)
@@ -167,4 +176,301 @@ hist(trainingValidNoFillers$invRT, breaks = 100)
 ```
 
 
+Next, the conditions of interest were grouped based on whether the items were words or pseudowords.
+```{r warning=FALSE}
+# create target word factor: 
+trainingValidNoFillers <- trainingValidNoFillers %>% 
+  mutate(targetWordFactor = as.factor(case_when(
+   condition == "WW" ~ "WW",               
+   condition == "PW" ~ "PW"
+    )
+  ) 
+)
+
+# create target nonword factor for the conditions: 
+
+trainingValidNoFillers <- trainingValidNoFillers %>% 
+  mutate(targetNonwordFactor = as.factor(case_when(
+    condition == "PP" ~ "PP",               
+    condition == "WP" ~ "WP"
+   )
+  ) 
+)
+```
+
+```{r include=FALSE}
+# performance by subject
+bySub <- trainingValidNoFillers %>% group_by(subject) %>%
+  summarise(
+    meanRT = mean(rt, na.rm = TRUE),
+    sdRT = sd(rt, na.rm = TRUE),
+    total = length(correct),
+    numCorrect = sum(correct),
+    numIncorrect = total - numCorrect,
+    errorRate = numIncorrect/total
+  )
+View(bySub)
+```
+
+Before we move on, items with lower than 50% accuracy should also be removed, as these items were unlikely to produce effective priming.
+```{r}
+# accuracy by item - check for any items with very low accuracy
+accByInitials <- trainingValidNoFillers %>% group_by(subject, initials, item) %>%
+  summarise(errorRate = 1- mean(correct))
+View(accByInitials)
+  
+
+# data exclusion 
+# exclude items that are more than 50% incorrect from each subject
+trainingValidNoFillersExcluded <- trainingValidNoFillers %>%
+  semi_join(subset(accByInitials, errorRate <= 0.5),
+            by = c('initials', 'subject', 'item'))
+
+```
+Now we have a cleaned training dataset. 
+
+Since our experiment used repeated measures design, we will need to remove between-subject variance for the confidence interval (ci) to reflect the actual difference caused by experiment manipulation. The following is how I removed between-subject variance for error rate data.
+```{r results="hide"}
+# performance by subject
+bySub <- trainingValidNoFillers %>% group_by(subject) %>%
+  summarise(
+    meanRT = mean(rt, na.rm = TRUE),
+    sdRT = sd(rt, na.rm = TRUE),
+    total = length(correct),
+    numCorrect = sum(correct),
+    numIncorrect = total - numCorrect,
+    errorRate = numIncorrect/total
+  )
+View(bySub)
+
+
+
+# error rates by block
+accByBlockSub <- trainingValidNoFillersExcluded %>%
+  group_by(lexicality, block, subject) %>%
+  summarise(
+    total = length(correct),
+    numCorrect = sum(correct),
+    numIncorrect = total-numCorrect,
+    errorRate = numIncorrect/total 
+  )
+View(accByBlockSub)
+
+
+#remove between subject variance
+bySub <- bySub %>% mutate(grandMean = mean(errorRate),
+                          diff = grandMean - errorRate)
+
+accByBlockSub <- accByBlockSub %>% 
+  mutate(adj = errorRate + bySub$diff)
+
+
+accByBlock <- accByBlockSub %>% group_by(lexicality, block) %>%
+  summarise(
+    N = n_distinct(subject),
+    errorRate = mean(adj),
+    SD = sd(adj, na.rm = TRUE),
+    SE = SD/sqrt(N),
+    ci_original = qnorm(0.975)*SE, 
+    ci = ci_original*sqrt(8/7)           #adjusted based on Morey(2008)
+  )
+accByBlock
+
+```
+Here is the plot showing error rate differences caused by blocks (how many times an items is repeated) and lexicality (word vs pseudoword). Error bars showing the confidence interval adjusted to remove between-subject variance.
+```{r}
+# plot error rate by block and lexicality
+# words 
+# reorder levels
+accByBlock$block <- factor(accByBlock$block, c("b1", "b2", "b3", "b4"))
+accByBlock$lexicality <- factor(accByBlock$lexicality, c("word", "pseudo"))
+
+
+ggplot(accByBlock, aes(x = lexicality, y = errorRate, group = block, fill = block)) +
+  geom_bar(stat = "identity", width=0.8, color= "black", position = position_dodge(0.9)) +
+  scale_fill_brewer(palette="Greys") +
+  scale_x_discrete("Blocks") +
+  coord_cartesian(ylim = c(0,0.1)) + 
+  theme_light() +
+  theme(legend.title = element_blank(),
+        legend.position='none',
+        axis.line.x = element_line(color="white"),
+        axis.line.y = element_line(color="white"))+
+  
+   geom_errorbar(aes(ymin = errorRate - ci, ymax = errorRate + ci), width = .15,  #size=.5, 
+                position=position_dodge(.9)) 
+```
+These results reflected that responses to words in general had lower error rate than responses to pseudowords. But the response accuracy to pseudowords improved a great deal over the course of repetition.    
+
+
+```{r include=FALSE}
+# remove rt between-subject difference
+## rt by subject
+rtsBySub <- trainingValidNoFillersExcluded %>% group_by(subject) %>%
+  summarise(
+    N    = length(rt),
+    meanRT = mean(rt, na.rm = TRUE),
+    sdRT = sd(rt, na.rm = TRUE),
+    seRT = sdRT / sqrt(N)
+  )
+View(rtsBySub)
+
+
+# rt by block
+rtsByBlockSub <- trainingValidNoFillersExcluded %>% group_by(lexicality,block,subject) %>% 
+  summarise(
+                   N    = length(rt),
+                   meanRT = mean(rt, na.rm = TRUE),
+                   sdRT = sd(rt, na.rm = TRUE),
+                   seRT = sdRT / sqrt(N)
+                   )
+
+View(rtsByBlockSub)
+
+
+#remove between subject variance 
+rtsBySub <- rtsBySub %>% mutate(grandMean = mean(meanRT),
+                                diff = grandMean - meanRT)
+
+rtsByBlockSub <-  rtsByBlockSub %>% mutate(adj = meanRT + rtsBySub$diff) 
+
+
+
+# rt by condition
+rtsByBlock <- rtsByBlockSub %>% group_by(lexicality,block) %>% 
+  summarise(
+                                 N    = length(adj),
+                                 meanRT = mean(adj, na.rm = TRUE),
+                                 sdRT = sd(adj, na.rm = TRUE),
+                                 seRT = sdRT / sqrt(N),
+                                  
+                                 ci_original = qnorm(0.975)*sdRT/sqrt(N), 
+                                 ci = ci_original*sqrt(8/7)           #adjusted based on Morey(2008)
+                     )   
+
+rtsByBlock
+
+```
+The following plot shows the rt difference caused by blocks and lexicality. Likewise, error bars showing the confidence interval adjusted to remove between-subject variance. 
+```{r}
+# plot RT by block and lexicality
+# words 
+# reorder levels
+rtsByBlock$block <- factor(rtsByBlock$block, c("b1", "b2", "b3", "b4"))
+rtsByBlock$lexicality <- factor(rtsByBlock$lexicality, c("word", "pseudo"))
+
+ggplot(rtsByBlock, aes(x = lexicality, y = meanRT, group = block, fill = block)) +
+  geom_bar(stat = "identity", width=0.8, color= "black", position = position_dodge(0.9)) +
+ scale_fill_brewer(palette="Greys") +
+  scale_x_discrete("Blocks") +
+  coord_cartesian(ylim = c(800,1300)) + 
+  theme_light() +
+  theme(legend.title = element_blank(),
+        legend.position='none',
+        axis.line.x = element_line(color="white"),
+        axis.line.y = element_line(color="white"))+
+  
+  geom_errorbar(aes(ymin = meanRT - ci, ymax = meanRT + ci), width = .1, # size=.3,    # Thinner lines
+                position=position_dodge(.9))
+```
+Response times to pseudowords were longer than those to words. However, unlike the error rate results, reponses times to both words and pseudowords seemed to have gradually become shorter due to repetitions over the 4 blocks. 
+
+## Part 2. Test phase
+In the test phase, participants heard items that share the same initial segments with words and pseudowords presented in the training phase, such as *hijack*, shaing /haɪdʒ/ with *hygiene*. We would like to investigate whether this kind of word-primed target words evoke slower response as compared to unprimed words and examine the magnitude of the delay. 
+
+Like in the training phase, I also filtered data for the test phase and removed participants with too many missing/incorrect responses. 
+```{r}
+#subset LDT data only
+testData <- df %>% filter(stimulus == "" & item != "")
+
+#number of non-response
+testData <- testData %>% mutate(missing = case_when(
+   key_press == -1 ~ 1,
+   TRUE ~ 0
+  ))
+table(testData$missing)
+
+BySubjMissing <- testData %>% group_by(subject) %>% 
+  summarise(missingAnswer = sum(missing))  
+View(BySubjMissing)
+
+# score responses
+testData <- testData %>% mutate(correct = case_when(
+  lexicality == "pseudo" & key_press == 81 ~ 1,
+  lexicality == "word" & key_press == 80 ~ 1,
+  TRUE ~ 0
+))
+table(testData$correct)
+
+
+# performance by subject - summary
+
+bySub0 <- testData %>% group_by(subject) %>% 
+  summarise(
+                missingAnswer = sum(missing),
+                invalidResponse = sum(rt<450),            
+                meanRT = mean(rt, na.rm = TRUE),
+                sdRT = sd(rt, na.rm = TRUE),
+                numResponse = length(correct),
+                numCorrect = sum(correct),              
+                errorRate = 1 - mean(correct)
+)
+View(bySub0)
+
+
+
+testValid <- testData %>% 
+  filter(!subject %in% c(233, 217, 331, 703, 98, 329, 501, 970), 
+         rt >= 450)
+
+# Exclude invalid responses (rt < 450ms)
+testValid <- testValid %>% filter(rt >= 450)
+
+#Exclude fillers
+testValid <- testValid %>% filter(condition != "f")
+
+```
+
+Next, I checked the raw rt data and, as expected, it was positively-skewed with a longer right tail. But since the length of the longer rts were within reasonable range (3 seconds), they were not removed.
+```{r results="hide"}
+#check RT
+summary(testValid$rt)
+png(paste(filePathOut, "QQplot_rawRTs_original.png", sep = ""), width = 1000, height = 1000)
+qqmath(~rt | subject, data = testValid)
+dev.off()
+boxplot(testValid$rt ~ testValid$subject)
+hist(testValid$rt, breaks = 100)
+```
+In order to make the rt data more normally distributed, I did log transformation and inverse transformation on the raw data and plotted QQ plots, box plots and histograms to compare the distributions of the two transformations.
+```{r}
+# transform RTs
+testValid$logRT <- log(testValid$rt)
+testValid$invRT <- -1000/testValid$rt   
+```
+
+```{r}
+#check logRT
+summary(testValid$logRT)
+qqmath(~logRT | subject, data = testValid)
+boxplot(testValid$logRT ~ testValid$subject)
+hist(testValid$logRT, breaks = 100)
+
+```
+
+```{r}
+#check invRT
+summary(testValid$invRT)
+qqmath(~invRT | subject, data = testValid)
+boxplot(testValid$invRT ~ testValid$subject)
+hist(testValid$invRT, breaks = 100)
+```
+These plots suggest that inverse transformation normalised the data to a greater degree than log transformation. Therefore, we will conduct our statistical analyses using inversed rts.
+
+Finally, we need to exclude target items whose corresponding prime item evoked incorrect responses more than 50% of the time (i.e. twice) during the training phase, because these targets were unlikely to have been primed effectively in this case.  
+```{r}
+# exclude corresponding target trial if the prime item is more than twice incorrect 
+testDecValidNoFillersExcluded <- testValid %>%
+  anti_join(subset(accByInitials, errorRate > 0.5),
+            by = c('initials','subject'))
+```
 
