@@ -2,9 +2,15 @@
 title: "Exp4b LDT-LDT"
 author: "Yingcan Carol Wang"
 output:
-  html_notebook: default
+  html_notebook: 
+    theme: united
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+    df_print: paged
+    self_contained: yes
+    chunk_output_type: inline
 ---
-
 <style type="text/css">
 
 body, td {
@@ -21,18 +27,21 @@ pre {
 ## Introduction
 This experiment is part of a series experiments we conducted to investigate how different experimental tasks influence speech perception. Previously, we conducted three online behavioural experiments (Exp1, 3 & 4a) and one MEG experiment (Exp2) manipulating the process of spoken word recognition and learning through the competitor priming effect (Monsell & Hirsh, 1998). The competitor priming effect shows that a spoken word prime (e.g. *captain*) delays subsequent recognition of a neighbouring target spoken word sharing the same initial segments (e.g. *captive*). We replicated this effect in Exp1&2 by presenting interleaved prime and target items in a lexical decision task (LDT). In Exp3, we replaced the LDT with the pause detection task (PDT; Mattys & Clark, 2002; Gaskell & Dumay, 2003) and found surprising results that a pseudoword prime, but not a word prime, delayed word recognition. 
 
-In order to examine why these two tasks resulted in different response patterns and tease apart their effects during competitor priming, we then pre-registered and conducted Exp4a (osf.io/9453v), which used PDT in the training phase (when the prime is presented) and LDT in the test phase (when the target is presented) separately, and each prime was repeatedly presented for 4 times. However, we only found a marginal trend similar to the results in Exp1-2. Here, in Exp4b, we will again use the LDT in both the training and test phases to determine whether the results from Exp4a were due to the change of tasks or the separate training/test phase design which lengthened the prime-target lag. 
+In order to examine why these two tasks resulted in different response patterns and tease apart their effects during competitor priming, we then pre-registered and conducted Exp4a (osf.io/9453v), which used PDT in the training phase (when the prime is presented) and LDT in the test phase (when the target is presented) separately, and each prime was repeatedly presented for 4 times. However, we only found a marginal trend similar to the results in Exp1-2. Here, in Exp4b, we will again use the LDT in both the training and test phases to determine whether the results from Exp4a were due to the change of tasks or the separate training/test phase design which lengthened the prime-target lag. In addition, we also tested participant's episodic memory of the words and pseudowords they heard during the test phase.
 
 ```{r setup, include=FALSE}
-library(knitr)
 ## Setup
+library(knitr)
 opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align='center', fig.width=12, fig.height=6)
-opts_knit$set(root.dir = "/Users/wycarol/business onedrive/OneDrive - UIS/behavioural results/Exp4b_LDT_LDT/results/")
+#opts_knit$set(root.dir = "/Users/wycarol/business onedrive/OneDrive - UIS/behavioural results/Exp4b_LDT_LDT/results/")
+opts_knit$set(root.dir ='/Users/cw06/OneDrive - University Of Cambridge/behavioural results/Exp4b_LDT_LDT/results/')
 
-filePathOut <- "/Users/wycarol/business onedrive/OneDrive - UIS/behavioural results/Exp4b_LDT_LDT/results/figures"
+#filePathOut <- "/Users/wycarol/business onedrive/OneDrive - UIS/behavioural results/Exp4b_LDT_LDT/results/figures"
+filePathOut <-'C:/Users/cw06/OneDrive - University Of Cambridge/behavioural results/Exp4b_LDT_LDT/results/figures'
 ```
 
-```{r results="hide"}
+
+```{r warning=FALSE, message=FALSE}
 ##Load packages
 library(plyr)
 library(dplyr)
@@ -60,6 +69,7 @@ library(ggridges)
 library(bayestestR)
 
 library(simr) 
+library(kableExtra)
 ```
 
 ```{r, results = 'asis'}
@@ -98,6 +108,7 @@ n_distinct(df$subject)
 
 In the training phase, participants heard 108 different words (e.g. *hygeiene*) and pseudowords (e.g. *letto*) being repeated 4 times across 4 blocks.These items in training phase serve as primes that will perturb items to be presented in the test phase. We are only interested in general results patterns in the training phase.   
 
+### Data cleaning
 The first thing I did was to filter all the data for the training phase and cleaned the data by removing participants with too many missing responses or wrong answers (thresholded at 2 standard deviations above the mean). Responses that were too fast (rt < 450ms) were also removed, since it is practically impossible to reach a lexical decision within this range of time (Marslen-Wilson, 1984).  
 
 ```{r}
@@ -131,6 +142,7 @@ bySub0 <- trainingData %>%
             numIncorrect = total - numCorrect,
             errorRate = numIncorrect/total)
 View(bySub0)
+
 
 #remove subjects with too many missing answers and incorrect answers in either training or test phase
 trainingData <- trainingData %>%
@@ -175,9 +187,7 @@ boxplot(trainingValidNoFillers$invRT ~ trainingValidNoFillers$subject)
 hist(trainingValidNoFillers$invRT, breaks = 100)
 ```
 
-
-Next, the conditions of interest were grouped based on whether the items were words or pseudowords.
-```{r warning=FALSE}
+```{r include=FALSE}
 # create target word factor: 
 trainingValidNoFillers <- trainingValidNoFillers %>% 
   mutate(targetWordFactor = as.factor(case_when(
@@ -229,8 +239,11 @@ trainingValidNoFillersExcluded <- trainingValidNoFillers %>%
 ```
 Now we have a cleaned training dataset. 
 
+### Accuracy and RTs visualisation
 Since our experiment used repeated measures design, we will need to remove between-subject variance for the confidence interval (ci) to reflect the actual difference caused by experiment manipulation. The following is how I removed between-subject variance for error rate data.
-```{r results="hide"}
+
+
+```{r results='hide'}
 # performance by subject
 bySub <- trainingValidNoFillers %>% group_by(subject) %>%
   summarise(
@@ -257,14 +270,15 @@ accByBlockSub <- trainingValidNoFillersExcluded %>%
 View(accByBlockSub)
 
 
-#remove between subject variance
+##remove between subject variance
+#add grand mean and difference value between grand mean and individual subject result
 bySub <- bySub %>% mutate(grandMean = mean(errorRate),
                           diff = grandMean - errorRate)
-
+#add adjusted value for each result per condition per subject
 accByBlockSub <- accByBlockSub %>% 
   mutate(adj = errorRate + bySub$diff)
 
-
+#summarise based on adjusted value
 accByBlock <- accByBlockSub %>% group_by(lexicality, block) %>%
   summarise(
     N = n_distinct(subject),
@@ -278,6 +292,7 @@ accByBlock
 
 ```
 Here is the plot showing error rate differences caused by blocks (how many times an items is repeated) and lexicality (word vs pseudoword). Error bars showing the confidence interval adjusted to remove between-subject variance.
+
 ```{r}
 # plot error rate by block and lexicality
 # words 
@@ -352,7 +367,8 @@ rtsByBlock
 
 ```
 The following plot shows the rt difference caused by blocks and lexicality. Likewise, error bars showing the confidence interval adjusted to remove between-subject variance. 
-```{r}
+
+```{r echo=FALSE}
 # plot RT by block and lexicality
 # words 
 # reorder levels
@@ -378,6 +394,7 @@ Response times to pseudowords were longer than those to words. However, unlike t
 ## Part 2. Test phase
 In the test phase, participants heard items that share the same initial segments with words and pseudowords presented in the training phase, such as *hijack*, shaing /haɪdʒ/ with *hygiene*. We would like to investigate whether this kind of word-primed target words evoke slower response as compared to unprimed words and examine the magnitude of the delay. 
 
+### Data cleaning
 Like in the training phase, I also filtered data for the test phase and removed participants with too many missing/incorrect responses. 
 ```{r}
 #subset LDT data only
@@ -431,46 +448,546 @@ testValid <- testValid %>% filter(condition != "f")
 
 ```
 
-Next, I checked the raw rt data and, as expected, it was positively-skewed with a longer right tail. But since the length of the longer rts were within reasonable range (3 seconds), they were not removed.
+We also need to exclude target items whose corresponding prime item evoked incorrect responses more than 50% of the time (i.e. twice) during the training phase, because these targets were unlikely to have been primed effectively in this case.  
+
+```{r}
+# exclude corresponding target trial if the prime item is more than twice incorrect 
+testValidExcluded <- testValid %>%
+  anti_join(subset(accByInitials, errorRate > 0.5),
+            by = c('initials','subject'))
+```
+We now have a cleaned dataset for the test phase.
+
+### Data transformation
+Next, I checked the raw rt data and found that it was positively-skewed with a longer right tail. But since the length of the longer rts were within reasonable range (3 seconds), they were not removed.
 ```{r results="hide"}
 #check RT
-summary(testValid$rt)
+summary(testValidExcluded$rt)
 png(paste(filePathOut, "QQplot_rawRTs_original.png", sep = ""), width = 1000, height = 1000)
-qqmath(~rt | subject, data = testValid)
+qqmath(~rt | subject, data = testValidExcluded)
 dev.off()
-boxplot(testValid$rt ~ testValid$subject)
-hist(testValid$rt, breaks = 100)
+boxplot(testValidExcluded$rt ~ testValidExcluded$subject)
+hist(testValidExcluded$rt, breaks = 100)
 ```
 In order to make the rt data more normally distributed, I did log transformation and inverse transformation on the raw data and plotted QQ plots, box plots and histograms to compare the distributions of the two transformations.
 ```{r}
 # transform RTs
-testValid$logRT <- log(testValid$rt)
-testValid$invRT <- -1000/testValid$rt   
+testValidExcluded$logRT <- log(testValidExcluded$rt)
+testValidExcluded$invRT <- -1000/testValidExcluded$rt   
 ```
 
 ```{r}
 #check logRT
-summary(testValid$logRT)
-qqmath(~logRT | subject, data = testValid)
-boxplot(testValid$logRT ~ testValid$subject)
-hist(testValid$logRT, breaks = 100)
+summary(testValidExcluded$logRT)
+qqmath(~logRT | subject, data = testValidExcluded)
+boxplot(testValidExcluded$logRT ~ testValidExcluded$subject)
+hist(testValidExcluded$logRT, breaks = 100)
 
 ```
 
 ```{r}
 #check invRT
-summary(testValid$invRT)
-qqmath(~invRT | subject, data = testValid)
-boxplot(testValid$invRT ~ testValid$subject)
-hist(testValid$invRT, breaks = 100)
+summary(testValidExcluded$invRT)
+qqmath(~invRT | subject, data = testValidExcluded)
+boxplot(testValidExcluded$invRT ~ testValidExcluded$subject)
+hist(testValidExcluded$invRT, breaks = 100)
 ```
 These plots suggest that inverse transformation normalised the data to a greater degree than log transformation. Therefore, we will conduct our statistical analyses using inversed rts.
 
-Finally, we need to exclude target items whose corresponding prime item evoked incorrect responses more than 50% of the time (i.e. twice) during the training phase, because these targets were unlikely to have been primed effectively in this case.  
+
+### Accuracy visualisation
+In order to examine specific differences between conditions within words and pseudowords, we grouped the conditions of interest based on the lexicality of the items.
 ```{r}
-# exclude corresponding target trial if the prime item is more than twice incorrect 
-testDecValidNoFillersExcluded <- testValid %>%
-  anti_join(subset(accByInitials, errorRate > 0.5),
-            by = c('initials','subject'))
+# create target word factor: 
+testValidExcluded <- testValidExcluded %>% mutate(targetWordFactor = as.factor(case_when(
+  condition == "W"  ~ "W",
+  condition == "WW"  ~ "WW",
+  condition == "PW"  ~ "PW"
+)))
+
+
+# create target nonword factor for the conditions: 
+testValidExcluded <- testValidExcluded %>% mutate(targetNonwordFactor = as.factor(case_when(
+  condition == "P"  ~ "P",
+  condition == "PP"  ~ "PP",
+  condition == "WP"  ~ "WP"
+)))
+
 ```
 
+We can now plot the error rate for word conditions, error bars indicate confidence intervals adjusted by removing between-subject variance:
+```{r include=FALSE}
+## error rates by sub
+accBySub <- testValidExcluded %>% 
+  group_by(subject) %>% 
+  summarise(
+                            numCorrect = sum(correct),
+                            numIncorrect = length(correct)-sum(correct),
+                            total = length(correct),
+                            errorRate = numIncorrect/total
+                            )
+
+
+accBySub
+
+
+# by condition and sub
+accByConSubWord <- testValidExcluded %>%
+  group_by(targetWordFactor,subject) %>% 
+  summarise(
+                            numCorrect = sum(correct),
+                            numIncorrect = length(correct)-sum(correct),
+                            total = length(correct),
+                            errorRate = numIncorrect/total
+                            )
+
+# take out NA condition
+accByConSubWord <- accByConSubWord[!(is.na(accByConSubWord$targetWordFactor)),]
+accByConSubWord
+
+
+
+#remove between subject variance
+accBySub <- accBySub %>%
+  mutate(grandMean = mean(accBySub$errorRate),
+         diff = grandMean - errorRate)
+
+accByConSubWord <- accByConSubWord %>%
+  mutate(adj = errorRate + accBySub$diff)
+
+
+accByConditionWord<- accByConSubWord %>% 
+  group_by(targetWordFactor) %>% 
+  summarise(
+                       N = length(unique(subject)),
+                      errorRate = mean(adj),
+                       SD = sd(adj, na.rm = TRUE),
+                       SE = SD/sqrt(N),
+                       ci_original = qnorm(0.975)*SD/sqrt(N), 
+                       ci = ci_original*sqrt(6/5)           #adjusted based on Morey(2008)
+)
+accByConditionWord
+
+```
+
+```{r echo = FALSE, fig.width=4, fig.height=4}
+# plot error rates
+# words 
+# reorder levels
+accByConditionWord$targetWordFactor <- factor(accByConditionWord$targetWordFactor, c("W", "WW", "PW"))
+
+ggplot(accByConditionWord, aes(x = targetWordFactor, y = errorRate, fill = targetWordFactor)) + 
+  geom_bar(stat = "identity", width = 0.6, color= "black", position = position_dodge(0.9)) + 
+  scale_fill_brewer(palette="Blues") +
+  scale_x_discrete("Word Conditions") +
+  scale_y_continuous("Error Rate", 
+                     limits = c(0,0.3), breaks = seq(0,.3,.05)) + 
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        legend.position='none'
+        )+ 
+
+geom_errorbar(aes(ymin = errorRate - ci, ymax = errorRate + ci), width = .03)    # Thinner lines  
+#geom_signif(comparisons = list(c("W", "PW")), annotations="**", y_position = 0.22, tip_length = 0.2) +
+#geom_signif(comparisons = list(c("WW", "PW")), annotations="**", y_position = 0.26, tip_length = 0.2)
+
+```
+
+And the error rate for pseudoword conditions:
+```{r include=FALSE}
+#Nonword
+#by con sub
+accByConSubNonword <- testValidExcluded %>% 
+  group_by(targetNonwordFactor, subject) %>%
+  summarise(
+                         numCorrect = sum(correct),
+                         numIncorrect = length(correct)-sum(correct),
+                         total = length(correct),
+                         errorRate = numIncorrect/total
+                         )
+# take out NA condition
+accByConSubNonword <- accByConSubNonword[!(is.na(accByConSubNonword$targetNonwordFactor)),]
+accByConSubNonword
+
+
+#remove between subject variance
+accByConSubNonword <- accByConSubNonword %>%
+  mutate(adj = accBySub$diff + errorRate)
+
+
+accByConditionNonword<- accByConSubNonword %>% 
+  group_by(targetNonwordFactor) %>% 
+  summarise(
+                          N = length(unique(subject)), 
+                          errorRate = mean(adj),
+                           SD = sd(adj, na.rm = TRUE),
+                           SE = SD/sqrt(N),
+                           ci_original = qnorm(0.975)*SD/sqrt(N), 
+                           ci = ci_original*sqrt(6/5) 
+)
+accByConditionNonword
+
+```
+
+```{r echo=FALSE, fig.width=4, fig.height=4}
+#nonwords 
+# reorder levels
+accByConditionNonword$targetNonwordFactor <- factor(accByConditionNonword$targetNonwordFactor, c("P", "PP", "WP"))
+
+ggplot(accByConditionNonword, aes(x = targetNonwordFactor, y = errorRate, fill = targetNonwordFactor)) +
+  geom_bar(stat = "identity", width = 0.6, color= "black", position = position_dodge(0.9)) +
+  scale_fill_brewer(palette="Oranges") +
+  #geom_text(aes(label = round(errorRate, digits=3)), vjust=2, color="black", size=3.5)+
+  scale_x_discrete("Nonword Conditions") +
+  scale_y_continuous("Error Rate", 
+                     limits = c(0,0.3), breaks = seq(0,.3,.05)) + 
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        legend.position='none'
+        )+
+  
+  geom_errorbar(aes(ymin = errorRate - ci, ymax = errorRate + ci), width = 0.03)    # Thinner lines  
+#geom_signif(comparisons = list(c("PP", "WP")), annotations="**", y_position = 0.1, tip_length = 0.2)
+```
+
+### Generalised linear mixed-effect models for accuracy
+In order to find out whether there are significant error rate differences between conditions, I set relevant variables as factors first:
+```{r}
+## set factors for LME analyses
+testValidExcluded$subject <- as.factor(testValidExcluded$subject)
+testValidExcluded$correct <- as.factor(testValidExcluded$correct)
+testValidExcluded$item <- as.factor(testValidExcluded$item)
+testValidExcluded$lexicality <- as.factor(testValidExcluded$lexicality)
+
+```
+Then, I did generalised linear mixed-effect analysis with accuracy (dependent variable) and prime type for words (independent variable) as fixed effects, subject and item as random effects:
+```{r cache=TRUE}
+### word
+#dummy coding
+
+#word factor
+testValidExcluded$targetWordFactor <- factor(testValidExcluded$targetWordFactor, c("W", "WW", "PW"))
+contrasts(testValidExcluded$targetWordFactor)
+
+
+#logistic mixed effect model for accuracy
+accModelWord <- glmer(correct ~ 1 + targetWordFactor +
+                        (1 + targetWordFactor|subject) +
+                        (1 + targetWordFactor|item),
+                      data = testValidExcluded,
+                      family = binomial(link = "logit"),
+                      control = glmerControl(optimizer="bobyqa",
+                                             optCtrl = list(maxfun=2e5)))
+
+summary(accModelWord)
+pairs(emmeans(accModelWord, ~targetWordFactor))
+### save model
+saveRDS(accModelWord,"Exp4b_accModelWord.rds")
+accModelWord <- readRDS("Exp4b_accModelWord.rds")
+```
+
+These results indicated that pseudoword-primed words evoked significantly more errors than unrpimed words and word-primed words. 
+
+
+The main effect of prime type for words was tested through the likelihood ratio test, by comparing nested models using chi-square: 
+```{r cache=TRUE}
+#compare to null model
+accModelNullWord <- glmer(correct ~ 1 +
+                            (1 + targetWordFactor|subject) +
+                            (1 + targetWordFactor|item),
+                          data = testValidExcluded,
+                          family = binomial(link = "logit"),
+                          control = glmerControl(optimizer="bobyqa",
+                                                 optCtrl = list(maxfun=2e5)))
+
+anova(accModelNullWord,accModelWord)
+```
+
+
+I also did the analysis with prime type for pseudowords as the independent variable:
+```{r cache=TRUE}
+### Pseudoword
+#dummy coding
+testValidExcluded$targetNonwordFactor <- factor(testValidExcluded$targetNonwordFactor, c("P", "PP", "WP"))
+
+#logistic mixed effect model for accuracy
+accModelNonword <- glmer(correct ~ 1 + targetNonwordFactor +
+                           (1 + targetNonwordFactor |subject) +
+                           (1 + targetNonwordFactor |item),
+                         data = testValidExcluded,
+                         family = binomial(link = "logit"),
+                         control = glmerControl(optimizer="bobyqa",
+                                                optCtrl = list(maxfun=2e5)))
+summary(accModelNonword)
+pairs(emmeans(accModelNonword, ~targetNonwordFactor))
+### save model
+saveRDS(accModelNonword,"Exp4b_accModelNonword.rds")
+accModelNonword <- readRDS("Exp4b_accModelNonword.rds")
+```
+
+```{r cache=TRUE}
+#compare to null model
+accModelNullNonword <- glmer(correct ~ 1+
+                               (1 + targetNonwordFactor|subject) +
+                               (1 + targetNonwordFactor|item),
+                             data = testValidExcluded,
+                             family = binomial(link = "logit"),
+                             control = glmerControl(optimizer="bobyqa",
+                                                    optCtrl = list(maxfun=2e5)))
+
+anova(accModelNullNonword,accModelNonword)
+
+```
+
+### RTs visualisation
+I also plotted the response times to different word conditions:
+```{r echo=FALSE, results="asis"}
+#descriptive RT by condition 
+#words
+rtsBySub <- testValidExcluded %>%
+  group_by(subject)%>% 
+  summarise(
+                   N    = length(rt),
+                   meanRT = mean(rt, na.rm = TRUE),
+                   sdRT = sd(rt, na.rm = TRUE),
+                   seRT = sdRT / sqrt(N))
+
+
+rtWordByConSub <- testValidExcluded %>% 
+  group_by(targetWordFactor,subject) %>% 
+  summarise(
+                  N    = length(rt),
+                  meanRT = mean(rt, na.rm = TRUE),
+                  sdRT = sd(rt, na.rm = TRUE),
+                  seRT = sdRT / sqrt(N))
+
+rtWordByConSub <- rtWordByConSub[!(is.na(rtWordByConSub$targetWordFactor)),]
+
+
+#remove between subject variance 
+rtsBySub <- rtsBySub %>% mutate(grandMean = mean(meanRT),
+                                diff = grandMean - meanRT)
+
+rtWordByConSub <- rtWordByConSub %>% mutate(adj = meanRT + rtsBySub$diff)
+
+View(rtWordByConSub)
+
+#get rt by condition
+rtsByWord <- rtWordByConSub %>% 
+  group_by(targetWordFactor) %>% 
+  summarise(
+                   N = length(adj),
+                   meanRT = mean(adj, na.rm = TRUE),
+                   sdRT = sd(adj, na.rm = TRUE),
+                   seRT = sdRT / sqrt(N),
+                   ci = qnorm(0.975)*sdRT/sqrt(N), 
+                   ci_adjusted = ci*sqrt(6/5) 
+                   )
+kable(rtsByWord, digit=2, "simple")
+
+```
+
+```{r echo=FALSE, fig.width=4, fig.height=4}
+# plot RT by condition
+# words 
+# reorder levels
+rtsByWord$targetWordFactor <- factor(rtsByWord$targetWordFactor, c("W", "WW", "PW"))
+
+ggplot(rtsByWord, aes(x = targetWordFactor, y = meanRT, fill = targetWordFactor)) +
+  geom_bar(stat = "identity", width=0.8, color= "black", position = position_dodge(0.9)) +
+  scale_fill_brewer(palette="Blues") +
+  #geom_text(aes(label = round(meanRT, digits=2)), vjust= 3, color="black", size=3.5)+
+  scale_x_discrete("Word Conditions") +
+  # scale_y_continuous("mean RT", 
+  #                    limits = c(0,1300), breaks = seq(0,1300,200)) + 
+  coord_cartesian(ylim = c(900,1450)) + 
+  
+  theme_classic() +
+  theme(legend.title = element_blank(),
+        legend.position='none'
+       # axis.line.x = element_line(color="white"),
+      #  axis.line.y = element_line(color="white")
+      )+
+  
+     geom_errorbar(aes(ymin = meanRT - ci, ymax = meanRT + ci), width = .03)  # size=.5)    # Thinner lines
+ #  geom_signif(comparisons = list(c("W", "WW")), annotations = "*", y_position = 1200, tip_length = 0.3) +
+#   geom_signif(comparisons = list(c("WW", "PW")), annotations = "*", y_position = 1200, tip_length = 0.3)
+```
+
+And pseudoword conditions:
+```{r echo=FALSE, results='asis'}
+##Nonword
+rtNonwordByConSub <- testValidExcluded %>%
+  group_by(targetNonwordFactor,subject) %>% 
+  summarise(
+                        N    = length(rt),
+                        meanRT = mean(rt, na.rm = TRUE),
+                        sdRT = sd(rt, na.rm = TRUE),
+                        seRT = sdRT / sqrt(N))
+
+rtNonwordByConSub <- rtNonwordByConSub[!(is.na(rtNonwordByConSub$targetNonwordFactor)),]
+
+
+
+
+#remove between subject variance 
+rtNonwordByConSub$adj <- rtsBySub$diff + rtNonwordByConSub$meanRT
+
+
+#get rt by condition
+rtsByNonword <- rtNonwordByConSub %>% 
+  group_by(targetNonwordFactor) %>% 
+  summarise(
+                   N    = length(adj),
+                   meanRT = mean(adj, na.rm = TRUE),
+                   sdRT = sd(adj, na.rm = TRUE),
+                   seRT = sdRT / sqrt(N),
+                   ci = qnorm(0.975)*sdRT/sqrt(N), 
+                   ci_adjusted = ci*sqrt(6/5) 
+                   )
+
+kable(rtsByNonword, digit = 2, 'simple')
+```
+
+```{r echo=FALSE, fig.width=4, fig.height=4}
+# plot
+# reorder levels
+rtsByNonword$targetNonwordFactor <- factor(rtsByNonword$targetNonwordFactor, c("P", "PP", "WP"))
+
+ggplot(rtsByNonword, aes(x = targetNonwordFactor, y = meanRT, fill = targetNonwordFactor)) +
+  geom_bar(stat = "identity", width=0.8, color= "black", position = position_dodge(0.9)) +
+  scale_fill_brewer(palette="Oranges") +
+  #geom_text(aes(label = round(meanRT, digits=2)), vjust= 3, color="black", size=3.5)+
+  scale_x_discrete("Nonword Conditions") +
+  coord_cartesian(ylim = c(900,1450)) + 
+  
+  theme_classic() +
+  theme(legend.position='none'
+        #axis.line.x = element_line(color="white"),
+       # axis.line.y = element_line(color="white")
+       )+
+  geom_errorbar(aes(ymin = meanRT - ci, ymax = meanRT + ci), width = .03, # size=.5,    # Thinner lines
+                position=position_dodge(.9))
+#  geom_signif(comparisons = list(c("P", "PP")), annotations = "***", y_position = 1200, tip_length = 0.3) +
+#  geom_signif(comparisons = list(c("PP", "WP")), annotations = "***", y_position = 1200, tip_length = 0.3) 
+
+  
+```
+### Linear mixed-effect models for RTs
+Here, I did linear mixed-effect analysis with inversed rts as the dependent variable and prime type for words as the independent variable. Since we are testing two planned contrasts here: word-primed word vs unprimed word (WW - W), word-primed word vs pseudoword-primed word (WW - PW), we don't need to carry out correction for multiple comparisons.  
+```{r cache=TRUE}
+#remove NAs from dataset
+testWord <- testValidExcluded %>%
+  select(-accuracy, -attempt_number, -order, -targetNonwordFactor) %>%
+  drop_na(targetWordFactor)
+
+#define contrasts for the word model:   
+#dummy coding
+testWord$targetWordFactor <- factor(testWord$targetWordFactor, c("WW","W","PW"))
+contrasts(testWord$targetWordFactor)
+
+
+# inverse RT - this one looks more normal than the log transformation
+invRTmodelWord <- lmer(invRT ~ 1 + targetWordFactor +
+                         (1 + targetWordFactor|subject) + 
+                         (1 + targetWordFactor|item), 
+                       data = testWord, 
+                       REML=FALSE,
+                       control = lmerControl(optimizer="bobyqa",
+                                              optCtrl = list(maxfun=2e5))
+                       )
+
+summary(invRTmodelWord)
+```
+
+```{r include=FALSE}
+### save model
+saveRDS(invRTmodelWord,"Exp4b_invRTmodelWord.rds")
+invRTmodelWord <- readRDS("Exp4b_invRTmodelWord.rds")
+```
+
+We also need to check the model residual's normality and homoscedasticity:
+```{r}
+qqnorm(resid(invRTmodelWord))
+hist(resid(invRTmodelWord))
+plot(invRTmodelWord)
+```
+It seems that these assumptions were met.
+
+As predicted, the model results showed that word priming evoked the competitor priming effect such that word-primed words were recognised significantly more slowly than unprimed words and pseudoword-primed words. However, it should be noted that the effect size (as represented by the estimate) was also smaller than that shown in our previous experiment in which the prime-target lag was shorter. 
+
+I then did the likelihood ratio test on nested models to check the main effect of prime type for words:
+```{r cache=TRUE}
+#null model
+invRTmodelWordNull <- lmer(invRT ~ 1 + 
+                             (1+targetWordFactor|subject) +   
+                             (1+targetWordFactor|item), 
+                           data = testWord, 
+                           REML=FALSE,
+                           control = lmerControl(optimizer="bobyqa",
+                                                 optCtrl = list(maxfun=2e5)))
+anova(invRTmodelWordNull, invRTmodelWord)
+
+```
+The main effect of prime type for words is marginal.
+
+
+
+
+
+### Power Analysis for future experiments
+Since the effect size of the competitor priming effect under current experimental design is smaller than what we expected, we decided to conduct a new power analysis to decide how many participants we should recruit for the other two experiments in this series.
+```{r results='hide',cache=TRUE}
+## remove irrelevant contrast levels
+testWord2 <- testWord
+testWord2$targetWordFactor <- factor(testWord2$targetWordFactor, c("W","WW"))
+testWord2 <- drop_na(testWord2,targetWordFactor)
+contrasts(testWord2$targetWordFactor)
+
+#run the model again
+invRTmodelWord2 <- lmer(invRT ~ 1 + targetWordFactor  +
+                         (1+targetWordFactor|subject) + 
+                          (1+targetWordFactor|item),
+                       data = testWord2, REML=FALSE)
+summary(invRTmodelWord2)
+```
+
+```{r eval=FALSE}
+#set the effect size of interest
+fixef(invRTmodelWord2)["targetWordFactorWW"] <- 0.01
+#Add more subjects
+invRTmodelWord3 <- extend(invRTmodelWord2, along = "subject", n = 350)
+# calculate power
+#powerSim(invRTmodelWord3, test=fixed("targetWordFactor"))
+```
+
+```{r results="hide", cache=TRUE, eval=FALSE}
+#calculate the sample size needed for 80% power
+power_curve <- powerCurve(invRTmodelWord3, test=fixed("targetWordFactor"), along = "subject", breaks=seq(70,350,10))
+saveRDS(power_curve, 'power_curve.rds')
+```
+
+```{r}
+readRDS('power_curve.rds')
+#print(power_curve)
+plot(power_curve)
+```
+
+```{r}
+#set a different effect size of interest
+fixef(invRTmodelWord2)["targetWordFactorWW"] <- 0.013
+#Add more subjects
+invRTmodelWord4 <- extend(invRTmodelWord2, along = "subject", n = 350)
+
+```
+
+```{r results="hide", cache=TRUE, eval=FALSE}
+#calculate the sample size needed for 80% power
+power_curve2 <- powerCurve(invRTmodelWord4, test=fixed("targetWordFactor"), along = "subject", breaks=seq(70,350,10))
+saveRDS(power_curve2, 'power_curve2.rds')
+```
+
+```{r}
+readRDS('power_curve2.rds')
+#print(power_curve)
+plot(power_curve2)
