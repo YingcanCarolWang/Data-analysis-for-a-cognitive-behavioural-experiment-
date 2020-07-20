@@ -27,7 +27,7 @@ pre {
 ## Introduction
 This experiment is part of a series experiments we conducted to investigate how different experimental tasks influence speech perception. Previously, we conducted three online behavioural experiments (Exp1, 3 & 4a) and one MEG experiment (Exp2) manipulating the process of spoken word recognition and learning through the competitor priming effect (Monsell & Hirsh, 1998). The competitor priming effect shows that a spoken word prime (e.g. *captain*) delays subsequent recognition of a neighbouring target spoken word sharing the same initial segments (e.g. *captive*). We replicated this effect in Exp1&2 by presenting interleaved prime and target items in a lexical decision task (LDT). In Exp3, we replaced the LDT with the pause detection task (PDT; Mattys & Clark, 2002; Gaskell & Dumay, 2003) and found surprising results that a pseudoword prime, but not a word prime, delayed word recognition. 
 
-In order to examine why these two tasks resulted in different response patterns and tease apart their effects during competitor priming, we then pre-registered and conducted Exp4a (osf.io/9453v), which used PDT in the training phase (when the prime is presented) and LDT in the test phase (when the target is presented) separately, and each prime was repeatedly presented for 4 times. However, we only found a marginal trend similar to the results in Exp1-2. Here, in Exp4b, we will again use the LDT in both the training and test phases to determine whether the results from Exp4a were due to the change of tasks or the separate training/test phase design which lengthened the prime-target lag. In addition, we also tested participant's episodic memory of the words and pseudowords they heard during the test phase.
+In order to examine why these two tasks resulted in different response patterns and tease apart their effects during competitor priming, we then pre-registered and conducted Exp4a (osf.io/9453v), which used PDT in the encoding training phase (when the prime is presented) and LDT in the recognition test phase (when the target is presented) separately, and each prime was repeatedly presented for 4 times. However, we only found a marginal trend similar to the results in Exp1-2. Here, in Exp4b, we will again use the LDT in both the encoding and recognition phases to determine whether the results from Exp4a were due to the change of tasks or the separate encoding/recognition phase design which lengthened the prime-target lag. In addition, we also tested participant's episodic memory of the words and pseudowords they heard during the test phase.
 
 ```{r setup, include=FALSE}
 ## Setup
@@ -104,9 +104,9 @@ str(df)
 n_distinct(df$subject) 
 ```
 
-## Part 1. Training phase 
+## Part 1. Encoding phase 
 
-In the training phase, participants heard 108 different words (e.g. *hygeiene*) and pseudowords (e.g. *letto*) being repeated 4 times across 4 blocks.These items in training phase serve as primes that will perturb items to be presented in the test phase. We are only interested in general results patterns in the training phase.   
+In the encoding phase, participants heard 108 different words (e.g. *hygeiene*) and pseudowords (e.g. *letto*) being repeated 4 times across 4 blocks.These items in encoding phase serve as primes that will perturb items to be presented in the recognition phase. We are only interested in general results patterns from the encoding phase.   
 
 ### Data cleaning
 The first thing I did was to filter all the data for the training phase and cleaned the data by removing participants with too many missing responses or wrong answers (thresholded at 2 standard deviations above the mean). Responses that were too fast (rt < 450ms) were also removed, since it is practically impossible to reach a lexical decision within this range of time (Marslen-Wilson, 1984).  
@@ -317,8 +317,8 @@ ggplot(accByBlock, aes(x = lexicality, y = errorRate, group = block, fill = bloc
 ```
 These results reflected that responses to words in general had lower error rate than responses to pseudowords. But the response accuracy to pseudowords improved a great deal over the course of repetition.    
 
-
-```{r include=FALSE}
+The following table and plot shows the rt difference caused by blocks and lexicality. Likewise, error bars showing the confidence interval adjusted to remove between-subject variance. 
+```{r echo=FALSE}
 # remove rt between-subject difference
 ## rt by subject
 rtsBySub <- trainingValidNoFillersExcluded %>% group_by(subject) %>%
@@ -328,7 +328,7 @@ rtsBySub <- trainingValidNoFillersExcluded %>% group_by(subject) %>%
     sdRT = sd(rt, na.rm = TRUE),
     seRT = sdRT / sqrt(N)
   )
-View(rtsBySub)
+#View(rtsBySub)
 
 
 # rt by block
@@ -340,7 +340,7 @@ rtsByBlockSub <- trainingValidNoFillersExcluded %>% group_by(lexicality,block,su
                    seRT = sdRT / sqrt(N)
                    )
 
-View(rtsByBlockSub)
+#View(rtsByBlockSub)
 
 
 #remove between subject variance 
@@ -366,7 +366,7 @@ rtsByBlock <- rtsByBlockSub %>% group_by(lexicality,block) %>%
 rtsByBlock
 
 ```
-The following plot shows the rt difference caused by blocks and lexicality. Likewise, error bars showing the confidence interval adjusted to remove between-subject variance. 
+
 
 ```{r echo=FALSE}
 # plot RT by block and lexicality
@@ -391,8 +391,8 @@ ggplot(rtsByBlock, aes(x = lexicality, y = meanRT, group = block, fill = block))
 ```
 Response times to pseudowords were longer than those to words. However, unlike the error rate results, reponses times to both words and pseudowords seemed to have gradually become shorter due to repetitions over the 4 blocks. 
 
-## Part 2. Test phase
-In the test phase, participants heard items that share the same initial segments with words and pseudowords presented in the training phase, such as *hijack*, shaing /haɪdʒ/ with *hygiene*. We would like to investigate whether this kind of word-primed target words evoke slower response as compared to unprimed words and examine the magnitude of the delay. 
+## Part 2. Recognition phase
+In the recognition phase, participants heard items that share the same initial segments with words and pseudowords presented in the encoding phase, such as *hijack*, shaing /haɪdʒ/ with *hygiene*. We would like to investigate whether this kind of word-primed target words evoke slower response as compared to unprimed words and examine the magnitude of the delay. 
 
 ### Data cleaning
 Like in the training phase, I also filtered data for the test phase and removed participants with too many missing/incorrect responses. 
@@ -516,7 +516,7 @@ testValidExcluded <- testValidExcluded %>% mutate(targetNonwordFactor = as.facto
 ```
 
 We can now plot the error rate for word conditions, error bars indicate confidence intervals adjusted by removing between-subject variance:
-```{r include=FALSE}
+```{r echo=FALSE}
 ## error rates by sub
 accBySub <- testValidExcluded %>% 
   group_by(subject) %>% 
@@ -528,7 +528,7 @@ accBySub <- testValidExcluded %>%
                             )
 
 
-accBySub
+#accBySub
 
 
 # by condition and sub
@@ -543,7 +543,7 @@ accByConSubWord <- testValidExcluded %>%
 
 # take out NA condition
 accByConSubWord <- accByConSubWord[!(is.na(accByConSubWord$targetWordFactor)),]
-accByConSubWord
+#accByConSubWord
 
 
 
@@ -594,7 +594,7 @@ geom_errorbar(aes(ymin = errorRate - ci, ymax = errorRate + ci), width = .03)   
 ```
 
 And the error rate for pseudoword conditions:
-```{r include=FALSE}
+```{r echo=FALSE}
 #Nonword
 #by con sub
 accByConSubNonword <- testValidExcluded %>% 
@@ -607,7 +607,7 @@ accByConSubNonword <- testValidExcluded %>%
                          )
 # take out NA condition
 accByConSubNonword <- accByConSubNonword[!(is.na(accByConSubNonword$targetNonwordFactor)),]
-accByConSubNonword
+
 
 
 #remove between subject variance
@@ -769,8 +769,8 @@ rtsBySub <- rtsBySub %>% mutate(grandMean = mean(meanRT),
                                 diff = grandMean - meanRT)
 
 rtWordByConSub <- rtWordByConSub %>% mutate(adj = meanRT + rtsBySub$diff)
+#View(rtWordByConSub)
 
-View(rtWordByConSub)
 
 #get rt by condition
 rtsByWord <- rtWordByConSub %>% 
@@ -780,11 +780,11 @@ rtsByWord <- rtWordByConSub %>%
                    meanRT = mean(adj, na.rm = TRUE),
                    sdRT = sd(adj, na.rm = TRUE),
                    seRT = sdRT / sqrt(N),
-                   ci = qnorm(0.975)*sdRT/sqrt(N), 
-                   ci_adjusted = ci*sqrt(6/5) 
+                   ci_original = qnorm(0.975)*sdRT/sqrt(N), 
+                   ci = ci_original*sqrt(6/5) 
                    )
-kable(rtsByWord, digit=2, "simple")
-
+#kable(rtsByWord, digit=2, "simple")
+rtsByWord
 ```
 
 ```{r echo=FALSE, fig.width=4, fig.height=4}
@@ -794,7 +794,7 @@ kable(rtsByWord, digit=2, "simple")
 rtsByWord$targetWordFactor <- factor(rtsByWord$targetWordFactor, c("W", "WW", "PW"))
 
 ggplot(rtsByWord, aes(x = targetWordFactor, y = meanRT, fill = targetWordFactor)) +
-  geom_bar(stat = "identity", width=0.8, color= "black", position = position_dodge(0.9)) +
+  geom_bar(stat = "identity", width=0.6, color= "black", position = position_dodge(0.9)) +
   scale_fill_brewer(palette="Blues") +
   #geom_text(aes(label = round(meanRT, digits=2)), vjust= 3, color="black", size=3.5)+
   scale_x_discrete("Word Conditions") +
@@ -842,11 +842,12 @@ rtsByNonword <- rtNonwordByConSub %>%
                    meanRT = mean(adj, na.rm = TRUE),
                    sdRT = sd(adj, na.rm = TRUE),
                    seRT = sdRT / sqrt(N),
-                   ci = qnorm(0.975)*sdRT/sqrt(N), 
-                   ci_adjusted = ci*sqrt(6/5) 
+                   ci_original = qnorm(0.975)*sdRT/sqrt(N), 
+                   ci = ci_original*sqrt(6/5) 
                    )
 
-kable(rtsByNonword, digit = 2, 'simple')
+#kable(rtsByNonword, digit = 2, 'simple')
+rtsByNonword
 ```
 
 ```{r echo=FALSE, fig.width=4, fig.height=4}
@@ -855,7 +856,7 @@ kable(rtsByNonword, digit = 2, 'simple')
 rtsByNonword$targetNonwordFactor <- factor(rtsByNonword$targetNonwordFactor, c("P", "PP", "WP"))
 
 ggplot(rtsByNonword, aes(x = targetNonwordFactor, y = meanRT, fill = targetNonwordFactor)) +
-  geom_bar(stat = "identity", width=0.8, color= "black", position = position_dodge(0.9)) +
+  geom_bar(stat = "identity", width=0.6, color= "black", position = position_dodge(0.9)) +
   scale_fill_brewer(palette="Oranges") +
   #geom_text(aes(label = round(meanRT, digits=2)), vjust= 3, color="black", size=3.5)+
   scale_x_discrete("Nonword Conditions") +
@@ -932,11 +933,67 @@ anova(invRTmodelWordNull, invRTmodelWord)
 The main effect of prime type for words is marginal.
 
 
+Similarly, I also did the lme analysis with prime type for pseudowords as the independent variable:
+```{r}
+##Pseudowords
+testValidExcluded$targetNonwordFactor <- factor(testValidExcluded$targetNonwordFactor, levels=c("PP","P","WP"))
+
+contrasts(testValidExcluded$targetNonwordFactor)
+
+
+# nonword 
+#inverse RT - this one looks more normal than the log transformation
+invRTmodelNonword <- lmer(invRT ~ 1 + targetNonwordFactor +
+                            (1 + targetNonwordFactor|subject) + 
+                            (1 + targetNonwordFactor|item), 
+                          data = testValidExcluded, 
+                          REML=FALSE,
+                          control = lmerControl(optimizer="bobyqa",
+                                                optCtrl = list(maxfun=2e5)))
+
+
+summary(invRTmodelNonword)
+
+```
+
+```{r include=FALSE}
+### save model
+saveRDS(invRTmodelNonword,"Exp4b_invRTmodelNonword.rds")
+invRTmodelNonword <- readRDS("Exp4b_invRTmodelNonword.rds")
+
+```
+The results indicated siginificantly faster response for pseudoword-primed pseudoword compared to unprimed and word-primed conditions.
+
+
+Checking the normality and homoscedasticity of the model residual:
+```{r}
+qqnorm(resid(invRTmodelNonword))
+hist(resid(invRTmodelNonword))
+plot(invRTmodelNonword)
+```
+
+
+
+```{r}
+#null model
+invRTmodelNonwordNull <- lmer(invRT ~ 1 + 
+                                (1 + targetNonwordFactor|subject) + 
+                                (1 + targetNonwordFactor |item), 
+                              data = testValidExcluded,
+                              REML=FALSE,
+                              control = lmerControl(optimizer="bobyqa",
+                                                    optCtrl = list(maxfun=2e5)))
+
+#likelyhood ratio test
+anova(invRTmodelNonwordNull, invRTmodelNonword)
+
+```
+The main effect of prime type for pseudowords is significant.
 
 
 
 ### Power Analysis for future experiments
-Since the effect size of the competitor priming effect under current experimental design is smaller than what we expected, we decided to conduct a new power analysis to decide how many participants we should recruit for the other two experiments in this series.
+Since the effect size of the competitor priming effect under current experimental design is smaller than what we expected, we decided to conduct a new power analysis to decide how many participants we should recruit for future experiments if we were to use a similar experimental design.
 ```{r results='hide',cache=TRUE}
 ## remove irrelevant contrast levels
 testWord2 <- testWord
@@ -973,7 +1030,7 @@ readRDS('power_curve.rds')
 plot(power_curve)
 ```
 
-```{r}
+```{r eval=FALSE}
 #set a different effect size of interest
 fixef(invRTmodelWord2)["targetWordFactorWW"] <- 0.013
 #Add more subjects
@@ -991,3 +1048,15 @@ saveRDS(power_curve2, 'power_curve2.rds')
 readRDS('power_curve2.rds')
 #print(power_curve)
 plot(power_curve2)
+
+```
+
+
+## Part3. Memory phase
+
+
+
+
+
+
+
