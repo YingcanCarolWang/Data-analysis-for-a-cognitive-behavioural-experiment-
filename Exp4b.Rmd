@@ -27,7 +27,7 @@ pre {
 ## Introduction
 This experiment is part of a series experiments we conducted to investigate how different experimental tasks influence speech perception. Previously, we conducted three online behavioural experiments (Exp1, 3 & 4a) and one MEG experiment (Exp2) manipulating the process of spoken word recognition and learning through the competitor priming effect (Monsell & Hirsh, 1998). The competitor priming effect shows that a spoken word prime (e.g. *captain*) delays subsequent recognition of a neighbouring target spoken word sharing the same initial segments (e.g. *captive*). We replicated this effect in Exp1&2 by presenting interleaved prime and target items in a lexical decision task (LDT). In Exp3, we replaced the LDT with the pause detection task (PDT; Mattys & Clark, 2002; Gaskell & Dumay, 2003) and found surprising results that a pseudoword prime, but not a word prime, delayed word recognition. 
 
-In order to examine why these two tasks resulted in different response patterns and tease apart their effects during competitor priming, we then pre-registered and conducted Exp4a (osf.io/9453v), which used PDT in the encoding training phase (when the prime is presented) and LDT in the recognition test phase (when the target is presented) separately, and each prime was repeatedly presented for 4 times. However, we only found a marginal trend similar to the results in Exp1-2. Here, in Exp4b, we will again use the LDT in both the encoding and recognition phases to determine whether the results from Exp4a were due to the change of tasks or the separate encoding/recognition phase design which lengthened the prime-target lag. In addition, we also tested participant's episodic memory of the words and pseudowords they heard during the test phase.
+In order to examine why these two tasks resulted in different response patterns and tease apart their effects during competitor priming, we then pre-registered and conducted Exp4a (osf.io/9453v), which used PDT in the prime phase and LDT in the target phase separately, and each prime was repeatedly presented for 4 times. However, we only found a marginal trend similar to the results in Exp1-2. Here, in Exp4b, we will again use the LDT in both phases to determine whether the results from Exp4a were due to the change of tasks or the separate prime/target phase design which lengthened the prime-target lag. 
 
 ```{r setup, include=FALSE}
 ## Setup
@@ -104,12 +104,12 @@ str(df)
 n_distinct(df$subject) 
 ```
 
-## Part 1. Encoding phase 
+## Part 1. Prime phase 
 
-In the encoding phase, participants heard 108 different words (e.g. *hygeiene*) and pseudowords (e.g. *letto*) being repeated 4 times across 4 blocks.These items in encoding phase serve as primes that will perturb items to be presented in the recognition phase. We are only interested in general results patterns from the encoding phase.   
+In the prime phase, participants heard 108 different words (e.g. *hygeiene*) and pseudowords (e.g. *letto*) being repeated 4 times across 4 blocks.These items in prime phase serve as stimuli that will perturb items to be presented in the target phase. We are only interested in descriptive statistical results from the prime phase.   
 
 ### Data cleaning
-The first thing I did was to filter all the data for the training phase and cleaned the data by removing participants with too many missing responses or wrong answers (thresholded at 2 standard deviations above the mean). Responses that were too fast (rt < 450ms) were also removed, since it is practically impossible to reach a lexical decision within this range of time (Marslen-Wilson, 1984).  
+The first thing I did was to subset data for the prime phase and clean the data by removing participants with too many missing responses or wrong answers (thresholded at 2 standard deviations above the mean). Responses that were too fast (rt < 450ms) were also removed, since it is practically impossible to reach a lexical decision within this range of time (Marslen-Wilson, 1984).  
 
 ```{r}
 ### Part 1
@@ -391,11 +391,11 @@ ggplot(rtsByBlock, aes(x = lexicality, y = meanRT, group = block, fill = block))
 ```
 Response times to pseudowords were longer than those to words. However, unlike the error rate results, reponses times to both words and pseudowords seemed to have gradually become shorter due to repetitions over the 4 blocks. 
 
-## Part 2. Recognition phase
-In the recognition phase, participants heard items that share the same initial segments with words and pseudowords presented in the encoding phase, such as *hijack*, shaing /haɪdʒ/ with *hygiene*. We would like to investigate whether this kind of word-primed target words evoke slower response as compared to unprimed words and examine the magnitude of the delay. 
+## Part 2. Target phase
+In the target phase, participants heard items that share the same initial segments with words and pseudowords presented in the prime phase, such as *hijack*, shaing /haɪdʒ/ with *hygiene*. We would like to investigate whether this kind of word-primed target words evoke slower response as compared to unprimed words and examine the magnitude of the delay. 
 
 ### Data cleaning
-Like in the training phase, I also filtered data for the test phase and removed participants with too many missing/incorrect responses. 
+Like in the prime phase, I also subset data for the test phase and removed participants with too many missing/incorrect responses. 
 ```{r}
 #subset LDT data only
 testData <- df %>% filter(stimulus == "" & item != "")
@@ -1009,6 +1009,7 @@ invRTmodelWord2 <- lmer(invRT ~ 1 + targetWordFactor  +
 summary(invRTmodelWord2)
 ```
 
+Here, I set the effect size to a smaller value than what we have seen in the current experiment.
 ```{r eval=FALSE}
 #set the effect size of interest
 fixef(invRTmodelWord2)["targetWordFactorWW"] <- 0.01
@@ -1029,7 +1030,7 @@ readRDS('power_curve.rds')
 #print(power_curve)
 plot(power_curve)
 ```
-
+The power curve results suggest that the power will reach a plateau before passing the 80% threshold despite the increasing number of subjects. This is not ideal, so I reset the desired effect size to 0.013, which is similar to that in this experiment. 
 ```{r eval=FALSE}
 #set a different effect size of interest
 fixef(invRTmodelWord2)["targetWordFactorWW"] <- 0.013
@@ -1051,8 +1052,9 @@ plot(power_curve2)
 
 ```
 
+This power curve indicates that we will need to recruit around 250 participants for future experiments in order to reach 80% power. 
 
-## Part3. Memory phase
+
 
 
 
